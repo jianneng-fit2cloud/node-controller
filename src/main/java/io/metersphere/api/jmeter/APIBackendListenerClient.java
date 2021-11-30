@@ -163,7 +163,10 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         }
         // 推送执行结果
         try {
+            LogUtil.info("执行完成开始同步发送KAFKA【" + testResult.getTestId() + "】");
             producerServer.send(JSON.toJSONString(testResult), producerProps);
+            LogUtil.info("同步发送报告信息到KAFKA完成【" + testResult.getTestId() + "】");
+
         } catch (Exception ex) {
             LogUtil.error("KAFKA 推送结果异常：[" + testId + "]" + ex.getMessage());
             // 补偿一个结果防止持续Running
