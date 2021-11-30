@@ -1,5 +1,6 @@
 package io.metersphere.api.jmeter;
 
+import com.alibaba.fastjson.JSON;
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
@@ -17,6 +18,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Map;
 
 @Service
 public class JMeterService {
@@ -55,7 +57,7 @@ public class JMeterService {
     }
 
 
-    private void addBackendListener(HashTree testPlan, RunRequest request) {
+    private void addBackendListener(HashTree testPlan, RunRequest request, Map<String, Object> producerProps) {
         BackendListener backendListener = new BackendListener();
         if (StringUtils.isNotEmpty(request.getReportId())) {
             backendListener.setName(request.getReportId());
@@ -77,6 +79,8 @@ public class JMeterService {
         if (StringUtils.isNotBlank(request.getRunMode())) {
             arguments.addArgument("runMode", request.getRunMode());
         }
+        arguments.addArgument(APIBackendListenerClient.KAFKA_CONFIG, JSON.toJSONString(producerProps));
+
         arguments.addArgument("DEBUG", request.isDebug() ? "DEBUG" : "RUN");
         arguments.addArgument("USER_ID", request.getUserId());
         backendListener.setArguments(arguments);
@@ -87,7 +91,7 @@ public class JMeterService {
     public void run(RunRequest request, HashTree testPlan) {
         try {
             init();
-            addBackendListener(testPlan, request);
+            addBackendListener(testPlan, request, request.getKafka());
             LocalRunner runner = new LocalRunner(testPlan);
             runner.run(request.getReportId());
         } catch (Exception e) {

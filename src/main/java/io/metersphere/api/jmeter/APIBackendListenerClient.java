@@ -30,6 +30,8 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     public final static String TEST_ID = "ms.test.id";
 
+    public final static String KAFKA_CONFIG = "ms.kafka.config";
+
     public final static String TEST_REPORT_ID = "ms.test.report.name";
 
     public final static String AMASS_REPORT = "ms.test.amass.report.id";
@@ -59,6 +61,9 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     private String setReportId;
 
     private String amassReport;
+
+    private Map<String, Object> producerProps;
+
     /**
      * 获得控制台内容
      */
@@ -158,7 +163,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         }
         // 推送执行结果
         try {
-            producerServer.send(JSON.toJSONString(testResult));
+            producerServer.send(JSON.toJSONString(testResult), producerProps);
         } catch (Exception ex) {
             LogUtil.error("KAFKA 推送结果异常：[" + testId + "]" + ex.getMessage());
             // 补偿一个结果防止持续Running
@@ -169,7 +174,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
                     }
                 }
             }
-            producerServer.send(JSON.toJSONString(testResult));
+            producerServer.send(JSON.toJSONString(testResult), producerProps);
         }
         LogUtil.info("接口收到集合报告ID：" + amassReport);
 
@@ -271,6 +276,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         this.runMode = context.getParameter("runMode");
         this.isDebug = StringUtils.equals(context.getParameter("DEBUG"), "DEBUG") ? true : false;
         this.userId = context.getParameter("USER_ID");
+        this.producerProps = JSON.parseObject(context.getParameter(KAFKA_CONFIG), Map.class);
         if (StringUtils.isBlank(this.runMode)) {
             this.runMode = ApiRunMode.RUN.name();
         }

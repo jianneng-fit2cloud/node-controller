@@ -133,12 +133,8 @@ public class JmeterExecuteService {
             if (runRequest != null && StringUtils.isNotEmpty(runRequest.getAmassReport())) {
                 this.putRunningTasks(runRequest.getAmassReport(), runRequest.getTestId());
             }
-            if (runRequest.getKafka() != null) {
-                LogUtil.info("KAFKA 信息：", JSON.toJSONString(runRequest.getKafka()));
-                String res = producerService.init(runRequest.getKafka());
-                if (!"SUCCESS".equals(res)) {
-                    return "KAFKA 初始化失败，请检查配置";
-                }
+            if (runRequest.getKafka() == null) {
+                return "KAFKA 初始化失败，请检查配置";
             }
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());

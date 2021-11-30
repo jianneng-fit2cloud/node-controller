@@ -14,7 +14,8 @@ public class ProducerController {
 
     @PostMapping("/create")
     public String create(@RequestBody Map<String, Object> producerProps) {
-        return producerService.init(producerProps);
+        producerService.init(producerProps);
+        return "SUCCESS";
     }
 }
 
