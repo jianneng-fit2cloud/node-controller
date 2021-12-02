@@ -76,6 +76,8 @@ public class JMeterService {
         } else {
             arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getTestId());
         }
+        arguments.addArgument(APIBackendListenerClient.REPORT_ID, request.getReportId());
+
         if (StringUtils.isNotBlank(request.getRunMode())) {
             arguments.addArgument("runMode", request.getRunMode());
         }

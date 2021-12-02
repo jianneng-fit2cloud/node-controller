@@ -1,25 +1,16 @@
 package io.metersphere.api.service.utils;
 
-import java.io.*;
-import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
-import com.alibaba.fastjson.JSON;
-import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.node.util.LogUtil;
-import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.jmeter.config.CSVDataSet;
 import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
 import org.apache.jmeter.protocol.http.util.HTTPFileArg;
 import org.apache.jorphan.collections.HashTree;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+
+import java.io.*;
+import java.net.*;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class ZipSpider {
 
@@ -39,14 +30,15 @@ public class ZipSpider {
             }
             //sop(html.toString());
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.error(e);
         } finally {
             if (isr != null) {
                 try {
                     buf.close();
                     isr.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.error(e);
+
                 }
             }
         }
@@ -79,13 +71,13 @@ public class ZipSpider {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.error(e);
         } finally {
             try {
                 in.close();
                 fos.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.error(e);
             }
         }
     }
@@ -106,20 +98,15 @@ public class ZipSpider {
                     while ((b = bin.read()) != -1) {
                         bout.write(b);
                     }
-                    bout.close();
-                    out.close();
                     LogUtil.info(fout + "解压成功");
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LogUtil.error(e);
                 }
-
             }
-            bin.close();
-            zin.close();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            LogUtil.error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.error(e);
         }
     }
 
@@ -183,10 +170,11 @@ public class ZipSpider {
     public static File downloadFile(String urlPath, String downloadDir) {
         OutputStream out = null;
         BufferedInputStream bin = null;
+        HttpURLConnection httpURLConnection = null;
         try {
             URL url = new URL(urlPath);
             URLConnection urlConnection = url.openConnection();
-            HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
+            httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
             httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
             httpURLConnection.setRequestMethod("GET");//设置请求方式，默认是GET
             httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
@@ -217,10 +205,12 @@ public class ZipSpider {
             return file;
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.error(e);
+
         } catch (IOException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.error(e);
+
             LogUtil.info("文件下载失败！");
         } finally {
             try {
@@ -229,6 +219,9 @@ public class ZipSpider {
                 }
                 if (out != null) {
                     out.close();
+                }
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
                 }
             } catch (Exception e) {
 
