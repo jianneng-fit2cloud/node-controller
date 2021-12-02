@@ -8,19 +8,28 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class ProducerService {
+    // 初始化不同地址kafka,每个地址初始化一个线程
+    private Map<String, KafkaTemplate> kafkaTemplateMap = new ConcurrentHashMap<>();
 
     public KafkaTemplate init(Map<String, Object> producerProps) {
         try {
-            producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                    "org.apache.kafka.common.serialization.StringSerializer");
-            producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                    "org.apache.kafka.common.serialization.StringSerializer");
-            DefaultKafkaProducerFactory pf = new DefaultKafkaProducerFactory<>(producerProps);
-            KafkaTemplate kafkaTemplate = new KafkaTemplate(pf, true);
-            return kafkaTemplate;
+            Object serverUrl = producerProps.get(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+            if (serverUrl != null && kafkaTemplateMap.containsKey(serverUrl.toString())) {
+                return kafkaTemplateMap.get(serverUrl);
+            } else {
+                producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                        "org.apache.kafka.common.serialization.StringSerializer");
+                producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                        "org.apache.kafka.common.serialization.StringSerializer");
+                DefaultKafkaProducerFactory pf = new DefaultKafkaProducerFactory<>(producerProps);
+                KafkaTemplate kafkaTemplate = new KafkaTemplate(pf, true);
+                kafkaTemplateMap.put(serverUrl.toString(), kafkaTemplate);
+                return kafkaTemplate;
+            }
         } catch (Exception e) {
             LogUtil.error(e);
             return null;
