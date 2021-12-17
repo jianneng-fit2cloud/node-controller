@@ -166,7 +166,7 @@ public class JmeterExecuteService {
             File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
             if (bodyFile != null) {
                 ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
-                File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getTestId() + ".jmx");
+                File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getReportId() + ".jmx");
                 // 生成执行脚本
                 HashTree testPlan = SaveService.loadTree(jmxFile);
                 // 开始执行
