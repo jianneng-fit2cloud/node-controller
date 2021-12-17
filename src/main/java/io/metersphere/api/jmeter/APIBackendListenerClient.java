@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.constants.RequestType;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
+import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MessageCache;
 import io.metersphere.api.module.*;
 import io.metersphere.api.service.JmeterExecuteService;
@@ -195,6 +196,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
             LogUtil.info("正在执行中的场景[" + amassReport + "]的内容：" + jmeterExecuteService.getRunningList(amassReport));
         }
         queue.clear();
+        FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + reportId + ".jmx");
         super.teardownTest(context);
     }
 
