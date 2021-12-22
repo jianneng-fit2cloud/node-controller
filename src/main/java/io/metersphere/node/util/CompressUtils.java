@@ -1,5 +1,7 @@
 package io.metersphere.node.util;
 
+import io.metersphere.utils.LoggerUtil;
+
 import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -32,7 +34,7 @@ public class CompressUtils {
             b = bos.toByteArray();
             bos.close();
         } catch (Exception ex) {
-            LogUtil.error(ex);
+            LoggerUtil.error(ex);
         }
 
         return b;
@@ -67,7 +69,7 @@ public class CompressUtils {
             zip.close();
             bis.close();
         } catch (Exception ex) {
-            LogUtil.error(ex);
+            LoggerUtil.error(ex);
         }
         return b;
     }

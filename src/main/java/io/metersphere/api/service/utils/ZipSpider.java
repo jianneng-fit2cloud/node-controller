@@ -1,93 +1,65 @@
 package io.metersphere.api.service.utils;
 
-import java.io.*;
-import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
-import com.alibaba.fastjson.JSON;
-import io.metersphere.api.jmeter.utils.FileUtils;
-import io.metersphere.node.util.LogUtil;
-import org.apache.dubbo.common.utils.CollectionUtils;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.jmeter.config.CSVDataSet;
 import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
 import org.apache.jmeter.protocol.http.util.HTTPFileArg;
 import org.apache.jorphan.collections.HashTree;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+
+import javax.net.ssl.*;
+import java.io.*;
+import java.net.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class ZipSpider {
 
-    //根据网址返回网页源代码
-    public static String getHtmlFromUrl(String url, String encoding) {
-        StringBuffer html = new StringBuffer();
-        InputStreamReader isr = null;
-        BufferedReader buf = null;
-        String str = null;
+    /**
+     * 覆盖java默认的证书验证
+     */
+    private static final TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            return new java.security.cert.X509Certificate[]{};
+        }
+
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
+                throws CertificateException {
+        }
+
+        public void checkServerTrusted(X509Certificate[] chain, String authType)
+                throws CertificateException {
+        }
+    }};
+
+    /**
+     * 设置不验证主机
+     */
+    private static final HostnameVerifier DO_NOT_VERIFY = new HostnameVerifier() {
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
+    };
+
+    /**
+     * 信任所有
+     *
+     * @param connection
+     * @return
+     */
+    private static SSLSocketFactory trustAllHosts(HttpsURLConnection connection) {
+        SSLSocketFactory oldFactory = connection.getSSLSocketFactory();
         try {
-            URL urlObj = new URL(url);
-            URLConnection con = urlObj.openConnection();
-            isr = new InputStreamReader(con.getInputStream(), encoding);
-            buf = new BufferedReader(isr);
-            while ((str = buf.readLine()) != null) {
-                html.append(str + "\n");
-            }
-            //sop(html.toString());
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            SSLSocketFactory newFactory = sc.getSocketFactory();
+            connection.setSSLSocketFactory(newFactory);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (isr != null) {
-                try {
-                    buf.close();
-                    isr.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-        return html.toString();
-    }
-
-    //根据网址下载网络文件到硬盘，包括图片，Gif图，以及压缩包
-    public static void download(String url, String path) {
-        File file = null;
-        FileOutputStream fos = null;
-        String downloadName = url.substring(url.lastIndexOf("/") + 1);
-        HttpURLConnection httpCon = null;
-        URLConnection con = null;
-        URL urlObj = null;
-        InputStream in = null;
-        byte[] size = new byte[1024];
-        int num = 0;
-        try {
-            file = new File(path + downloadName);
-            fos = new FileOutputStream(file);
-            if (url.startsWith("http")) {
-                urlObj = new URL(url);
-                con = urlObj.openConnection();
-                httpCon = (HttpURLConnection) con;
-                in = httpCon.getInputStream();
-                while ((num = in.read(size)) != -1) {
-                    for (int i = 0; i < num; i++)
-                        fos.write(size[i]);
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                in.close();
-                fos.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        return oldFactory;
     }
 
     //解压本地文件至目的文件路径
@@ -106,49 +78,16 @@ public class ZipSpider {
                     while ((b = bin.read()) != -1) {
                         bout.write(b);
                     }
-                    bout.close();
-                    out.close();
-                    LogUtil.info(fout + "解压成功");
+                    LoggerUtil.info(fout + "解压成功");
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LoggerUtil.error(e);
                 }
-
             }
-            bin.close();
-            zin.close();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            LoggerUtil.error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LoggerUtil.error(e);
         }
-    }
-
-    //从总目录下解压文件里所有的压缩包至目的文件路径
-    public static void unzipFromLoc(String filePath) throws Exception {
-        File file = new File(filePath);
-        File[] list = file.listFiles();
-        String from = "";
-        String to = "E:\\myDownload\\unzipFileFromWeb\\";
-        for (File f : list) {
-            boolean bool = f.isFile();
-            if (bool) {
-                from = f.getAbsolutePath();
-                from = from.replace("\\", "\\\\");
-                sop(from);
-                unzip(from, to);
-            }
-        }
-    }
-
-    public static void sop(Object obj) {
-        LogUtil.info(obj);
-    }
-
-    public static void seperate(char c) {
-        for (int x = 0; x < 100; x++) {
-            System.out.print(c);
-        }
-        sop("");
     }
 
     public static void getFiles(HashTree tree, List<BodyFile> files) {
@@ -183,10 +122,18 @@ public class ZipSpider {
     public static File downloadFile(String urlPath, String downloadDir) {
         OutputStream out = null;
         BufferedInputStream bin = null;
+        HttpURLConnection httpURLConnection = null;
         try {
             URL url = new URL(urlPath);
             URLConnection urlConnection = url.openConnection();
-            HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
+            boolean useHttps = urlPath.startsWith("https");
+            if (useHttps) {
+                LoggerUtil.info("进入HTTPS协议处理方法");
+                HttpsURLConnection https = (HttpsURLConnection) urlConnection;
+                trustAllHosts(https);
+                https.setHostnameVerifier(DO_NOT_VERIFY);
+            }
+            httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
             httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
             httpURLConnection.setRequestMethod("GET");//设置请求方式，默认是GET
             httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
@@ -213,15 +160,13 @@ public class ZipSpider {
             // 关闭资源
             bin.close();
             out.close();
-            LogUtil.info("文件下载成功！");
+            LoggerUtil.info("文件下载成功！");
             return file;
         } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LoggerUtil.error(e);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            LogUtil.info("文件下载失败！");
+            LoggerUtil.error(e);
+            LoggerUtil.info("文件下载失败！");
         } finally {
             try {
                 if (bin != null) {
@@ -229,6 +174,9 @@ public class ZipSpider {
                 }
                 if (out != null) {
                     out.close();
+                }
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
                 }
             } catch (Exception e) {
 

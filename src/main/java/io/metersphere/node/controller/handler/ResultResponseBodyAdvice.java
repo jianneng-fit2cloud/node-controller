@@ -2,7 +2,7 @@ package io.metersphere.node.controller.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -38,7 +38,7 @@ public class ResultResponseBodyAdvice implements ResponseBodyAdvice<Object> {
                 try {
                     return objectMapper.writeValueAsString(success);
                 } catch (JsonProcessingException e) {
-                    LogUtil.error(e);
+                    LoggerUtil.error(e);
                     return o;
                 }
             }

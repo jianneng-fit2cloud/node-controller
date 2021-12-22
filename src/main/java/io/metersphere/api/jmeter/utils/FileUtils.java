@@ -1,6 +1,6 @@
 package io.metersphere.api.jmeter.utils;
 
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.aspectj.util.FileUtil;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,16 +24,37 @@ public class FileUtils {
                     file.createNewFile();
                     FileUtil.copyStream(in, out);
                 } catch (IOException e) {
-                    LogUtil.error(e);
+                    LoggerUtil.error(e);
                     MSException.throwException("文件处理异常");
                 }
             }
         }
     }
+
     public static void deleteFile(String path) {
         File file = new File(path);
         if (file.exists()) {
             file.delete();
+        }
+    }
+
+    private static File[] getFiles(File dir) {
+        return dir.listFiles((f, name) -> {
+            File jar = new File(f, name);
+            return jar.isFile() && jar.canRead();
+        });
+    }
+
+
+    public static void deletePath(String path) {
+        File file = new File(path);
+        if (file.isDirectory()) {// $NON-NLS-1$
+            file = new File(path + "/");
+        }
+
+        File[] files = getFiles(file);
+        for (int i = 0; i < files.length; i++) {
+            files[i].delete();
         }
     }
 }

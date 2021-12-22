@@ -3,7 +3,7 @@ package io.metersphere.api.config;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.jmeter.NewDriver;
 import org.python.core.Options;
 import org.python.util.PythonInterpreter;
@@ -47,7 +47,7 @@ public class AppStartListener implements ApplicationListener<ApplicationReadyEve
             interp.exec("sys.path.append(\"" + path + "\")");
         } catch (Exception e) {
             e.printStackTrace();
-            LogUtil.error(e.getMessage(), e);
+            LoggerUtil.error(e.getMessage(), e);
         }
     }
 
@@ -58,7 +58,7 @@ public class AppStartListener implements ApplicationListener<ApplicationReadyEve
         try {
             NewDriver.addPath(FileUtils.JAR_FILE_DIR);
         } catch (MalformedURLException e) {
-            LogUtil.error(e.getMessage(), e);
+            LoggerUtil.error(e.getMessage(), e);
             MSException.throwException(e.getMessage());
         }
     }

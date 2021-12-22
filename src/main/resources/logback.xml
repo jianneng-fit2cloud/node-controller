@@ -103,7 +103,7 @@
             <level>DEBUG</level>
         </filter>
         <queueSize>10000</queueSize>
-        <appender-ref ref="console" />
+        <appender-ref ref="console"/>
     </appender>
 
     <appender name="debugAsyncAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -111,7 +111,7 @@
             <level>DEBUG</level>
         </filter>
         <queueSize>10000</queueSize>
-        <appender-ref ref="debugAppender" />
+        <appender-ref ref="debugAppender"/>
     </appender>
 
     <appender name="infoAsyncAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -119,7 +119,7 @@
             <level>INFO</level>
         </filter>
         <queueSize>10000</queueSize>
-        <appender-ref ref="infoAppender" />
+        <appender-ref ref="infoAppender"/>
     </appender>
 
     <appender name="errorAsyncAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -128,7 +128,7 @@
         </filter>
         <queueSize>10000</queueSize>
         <includeCallerData>true</includeCallerData>
-        <appender-ref ref="errorAppender" />
+        <appender-ref ref="errorAppender"/>
     </appender>
 
     <appender name="warnAsyncAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -137,20 +137,54 @@
         </filter>
         <queueSize>10000</queueSize>
         <includeCallerData>true</includeCallerData>
-        <appender-ref ref="warnAppender" />
+        <appender-ref ref="warnAppender"/>
     </appender>
 
+    <!-- 自定义执行过程日志 -->
+    <appender name="apiRunLogAppender"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <File>${logging.file.path}/ms-jmeter-run-log.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${logging.file.path}/history/ms-jmeter-run-log.%d{yyyyMMdd}-%i.log
+            </FileNamePattern>
+            <maxHistory>30</maxHistory>
+            <TimeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50MB</maxFileSize>
+            </TimeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <Pattern>%d [%thread] %-5level %logger{36} %line - %msg%n</Pattern>
+        </encoder>
+    </appender>
+    <appender name="runLogAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <queueSize>10000</queueSize>
+        <appender-ref ref="apiRunLogAppender"/>
+    </appender>
+    <logger name="ms-jmeter-run-log" additivity="false">
+        <level value="${logger.level:INFO}"/>
+        <appender-ref ref="runLogAppender"/>
+    </logger>
+
+
     <root level="INFO">
-        <appender-ref ref="infoAsyncAppender" />
-        <appender-ref ref="console" />
+        <appender-ref ref="infoAsyncAppender"/>
+        <appender-ref ref="console"/>
     </root>
 
     <logger name="io.metersphere" additivity="false">
-        <level value="${logger.level:INFO}" />
-        <appender-ref ref="debugAsyncAppender" />
-        <appender-ref ref="infoAsyncAppender" />
-        <appender-ref ref="warnAsyncAppender" />
-        <appender-ref ref="errorAsyncAppender" />
+        <level value="${logger.level:INFO}"/>
+        <appender-ref ref="debugAsyncAppender"/>
+        <appender-ref ref="infoAsyncAppender"/>
+        <appender-ref ref="warnAsyncAppender"/>
+        <appender-ref ref="errorAsyncAppender"/>
     </logger>
 
     <logger name="io.metersphere.node.Application" additivity="false" level="${logger.level:INFO}">

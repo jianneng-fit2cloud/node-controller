@@ -1,14 +1,14 @@
 package io.metersphere.api.jmeter;
 
-import io.metersphere.api.controller.request.RunRequest;
-import io.metersphere.api.jmeter.constants.ApiRunMode;
+import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
+import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
-import io.metersphere.node.util.LogUtil;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.jmeter.config.Arguments;
+import io.metersphere.dto.JmeterRunRequestDTO;
+import io.metersphere.jmeter.JMeterBase;
+import io.metersphere.jmeter.LocalRunner;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.jmeter.util.JMeterUtils;
-import org.apache.jmeter.visualizers.backend.BackendListener;
 import org.apache.jorphan.collections.HashTree;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
-import java.lang.reflect.Field;
 
 @Service
 public class JMeterService {
@@ -32,6 +31,8 @@ public class JMeterService {
         JMeterUtils.loadJMeterProperties(JMETER_PROPERTIES);
         JMeterUtils.setJMeterHome(JMETER_HOME);
         JMeterUtils.setLocale(LocaleContextHolder.getLocale());
+
+        APISingleResultListener.setConsole();
     }
 
     public String getJmeterHome() {
@@ -48,51 +49,27 @@ public class JMeterService {
         }
     }
 
-    public static HashTree getHashTree(Object scriptWrapper) throws Exception {
-        Field field = scriptWrapper.getClass().getDeclaredField("testPlan");
-        field.setAccessible(true);
-        return (HashTree) field.get(scriptWrapper);
-    }
-
-
-    private void addBackendListener(HashTree testPlan, RunRequest request) {
-        BackendListener backendListener = new BackendListener();
-        if (StringUtils.isNotEmpty(request.getReportId())) {
-            backendListener.setName(request.getReportId());
-        } else {
-            backendListener.setName(request.getTestId());
-        }
-        Arguments arguments = new Arguments();
-        if (StringUtils.isNotEmpty(request.getAmassReport())) {
-            arguments.addArgument(APIBackendListenerClient.AMASS_REPORT, request.getAmassReport());
-        }
-        if (request.getConfig() != null && request.getConfig().getMode().equals("serial") && request.getConfig().getReportType().equals("setReport")) {
-            arguments.addArgument(APIBackendListenerClient.TEST_REPORT_ID, request.getConfig().getReportName());
-        }
-        if (StringUtils.isNotEmpty(request.getReportId()) && ApiRunMode.API_PLAN.name().equals(request.getRunMode())) {
-            arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getReportId());
-        } else {
-            arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getTestId());
-        }
-        if (StringUtils.isNotBlank(request.getRunMode())) {
-            arguments.addArgument("runMode", request.getRunMode());
-        }
-        arguments.addArgument("DEBUG", request.isDebug() ? "DEBUG" : "RUN");
-        arguments.addArgument("USER_ID", request.getUserId());
-        backendListener.setArguments(arguments);
-        backendListener.setClassname(APIBackendListenerClient.class.getCanonicalName());
-        testPlan.add(testPlan.getArray()[0], backendListener);
-    }
-
-    public void run(RunRequest request, HashTree testPlan) {
+    public void runLocal(JmeterRunRequestDTO runRequest, HashTree testPlan) {
         try {
             init();
-            addBackendListener(testPlan, request);
+            runRequest.setHashTree(testPlan);
+            JMeterBase.addSyncListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
-            runner.run(request.getReportId());
+            runner.run(runRequest.getReportId());
         } catch (Exception e) {
-            LogUtil.error(e.getMessage(), e);
+            LoggerUtil.error(e.getMessage(), e);
             MSException.throwException("读取脚本失败");
         }
+    }
+
+    public void run(JmeterRunRequestDTO request) {
+        if (request.getCorePoolSize() > 0) {
+            CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).setCorePoolSize(request.getCorePoolSize());
+        }
+        CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).addTask(request);
+    }
+
+    public void addQueue(JmeterRunRequestDTO request) {
+        this.runLocal(request, request.getHashTree());
     }
 }
