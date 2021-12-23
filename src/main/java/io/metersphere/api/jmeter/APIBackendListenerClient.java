@@ -196,7 +196,10 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
             LogUtil.info("正在执行中的场景[" + amassReport + "]的内容：" + jmeterExecuteService.getRunningList(amassReport));
         }
         queue.clear();
-        FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + reportId + ".jmx");
+
+        String fileName = reportId + "_" + testId + ".jmx";
+        LogUtil.info("清理脚本文件：" + fileName);
+        FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + fileName);
         super.teardownTest(context);
     }
 
