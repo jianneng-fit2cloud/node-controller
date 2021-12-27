@@ -95,6 +95,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     @Override
     public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
+        LogUtil.info("接收到报告【 " + this.reportId + "】，资源【" + this.testId + "】的结果：" + sampleResults.size());
         queue.addAll(sampleResults);
     }
 
