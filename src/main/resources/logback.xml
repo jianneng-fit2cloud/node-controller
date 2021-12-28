@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true">
-    <property resource="application.properties"/>
+    <property resource="base.properties"/>
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d %5p %40.40c:%4L - %m%n</pattern>
@@ -139,6 +139,18 @@
         <includeCallerData>true</includeCallerData>
         <appender-ref ref="warnAppender"/>
     </appender>
+
+    <!-- 自定义JMETER输出日志 -->
+    <appender name="JMETER_LOG" class="io.metersphere.api.jmeter.JmeterLoggerAppender"/>
+
+    <root level="INFO">
+        <appender-ref ref="infoAsyncAppender"/>
+        <appender-ref ref="console"/>
+    </root>
+    <!--将JMETER日志单独输出的包路径-->
+    <logger name="org.apache.jmeter" additivity="false" level="${logger.level:INFO}">
+        <appender-ref ref="JMETER_LOG"/>
+    </logger>
 
     <!-- 自定义执行过程日志 -->
     <appender name="apiRunLogAppender"
