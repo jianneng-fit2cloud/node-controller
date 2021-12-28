@@ -32,10 +32,10 @@ import java.util.Map;
 public class JmeterExecuteService {
     @Resource
     private JMeterService jMeterService;
-    @Resource
-    private ProducerService producerService;
 
     private static String url = null;
+    private static boolean enable = false;
+
     // 记录所以执行中的请求/场景
     private Map<String, List<String>> runningTasks = new HashMap<>();
 
@@ -156,6 +156,7 @@ public class JmeterExecuteService {
                 }
             }
             url = jarUrl;
+            this.enable = runRequest.isEnable();
             LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
 
             File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
@@ -214,7 +215,8 @@ public class JmeterExecuteService {
 
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
-        if (StringUtils.isNotEmpty(url)) {
+        if (StringUtils.isNotEmpty(url) && enable) {
+            LogUtil.info("开始定时同步jar");
             File file = ZipSpider.downloadFile(url, FileUtils.JAR_FILE_DIR);
             if (file != null) {
                 ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
