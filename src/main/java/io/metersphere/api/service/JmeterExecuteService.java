@@ -32,6 +32,7 @@ public class JmeterExecuteService {
     private JMeterService jMeterService;
 
     private static String url = null;
+    private static boolean enable = false;
     private static String plugUrl = null;
 
     // 记录所以执行中的请求/场景
@@ -56,6 +57,7 @@ public class JmeterExecuteService {
                 if (file != null) {
                     ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                     this.loadJar(FileUtils.JAR_FILE_DIR);
+                    FileUtils.deleteFile(file.getPath());
                 }
             }
             if (StringUtils.isEmpty(plugUrl)) {
@@ -68,6 +70,7 @@ public class JmeterExecuteService {
             }
             url = jarUrl;
             plugUrl = plugJarUrl;
+            enable = runRequest.isEnable();
             LoggerUtil.info("开始拉取脚本和脚本附件：" + runRequest.getPlatformUrl());
 
             File bodyFile = ZipSpider.downloadFile(runRequest.getPlatformUrl(), FileUtils.BODY_FILE_DIR);
@@ -178,7 +181,7 @@ public class JmeterExecuteService {
 
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
-        if (StringUtils.isNotEmpty(url)) {
+        if (StringUtils.isNotEmpty(url) && enable) {
             FileUtils.deletePath(FileUtils.JAR_FILE_DIR);
             File file = ZipSpider.downloadFile(url, FileUtils.JAR_FILE_DIR);
             if (file != null) {

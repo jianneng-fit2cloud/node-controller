@@ -2,6 +2,7 @@ package io.metersphere.api.jmeter;
 
 import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
+import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.dto.JmeterRunRequestDTO;
@@ -26,13 +27,10 @@ public class JMeterService {
     @PostConstruct
     public void init() {
         String JMETER_HOME = getJmeterHome();
-
         String JMETER_PROPERTIES = JMETER_HOME + "/bin/jmeter.properties";
         JMeterUtils.loadJMeterProperties(JMETER_PROPERTIES);
         JMeterUtils.setJMeterHome(JMETER_HOME);
         JMeterUtils.setLocale(LocaleContextHolder.getLocale());
-
-        APISingleResultListener.setConsole();
     }
 
     public String getJmeterHome() {
@@ -52,6 +50,9 @@ public class JMeterService {
     public void runLocal(JmeterRunRequestDTO runRequest, HashTree testPlan) {
         try {
             init();
+            if (!FixedCapacityUtils.jmeterLogTask.containsKey(runRequest.getReportId())) {
+                FixedCapacityUtils.jmeterLogTask.put(runRequest.getReportId(), System.currentTimeMillis());
+            }
             runRequest.setHashTree(testPlan);
             JMeterBase.addSyncListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
