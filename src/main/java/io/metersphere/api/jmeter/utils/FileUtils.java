@@ -19,6 +19,10 @@ public class FileUtils {
             for (int i = 0; i < bodyFiles.length; i++) {
                 MultipartFile item = bodyFiles[i];
                 File file = new File(path + "/" + item.getOriginalFilename());
+                File parentFile = file.getParentFile();
+                if (!parentFile.exists()) {
+                    parentFile.mkdirs();
+                }
                 try (InputStream in = item.getInputStream(); OutputStream out = new FileOutputStream(file)) {
                     file.createNewFile();
                     FileUtil.copyStream(in, out);
