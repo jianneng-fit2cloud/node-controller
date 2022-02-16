@@ -18,3 +18,5 @@ target/
 *.ipr
 src/test/
 *.jar
+.mvn
+!.mvn/maven-wrapper.properties
