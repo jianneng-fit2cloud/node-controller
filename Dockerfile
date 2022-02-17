@@ -5,7 +5,6 @@ LABEL maintainer="FIT2CLOUD <support@fit2cloud.com>"
 ARG MS_VERSION=v1.18
 ARG DEPENDENCY=target/dependency
 
-COPY ${DEPENDENCY}/BOOT-INF/lib/ms-jmeter-core-* /opt/lib/ms-jmeter-core.jar
 COPY ${DEPENDENCY}/BOOT-INF/lib /opt/lib
 COPY ${DEPENDENCY}/META-INF /opt/META-INF
 COPY ${DEPENDENCY}/BOOT-INF/classes /opt
@@ -16,4 +15,4 @@ ENV AB_OFF=true
 ENV MS_VERSION=${MS_VERSION}
 ENV JAVA_OPTIONS=-Dfile.encoding=utf-8
 
-CMD ["/deployments/run-java.sh"]
+CMD ["sh", "-c", "mv /opt/lib/ms-jmeter-core-*.jar /opt/lib/ms-jmeter-core.jar && /deployments/run-java.sh"]
