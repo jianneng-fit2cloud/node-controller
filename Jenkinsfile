@@ -14,7 +14,7 @@ pipeline {
             steps {
                 configFileProvider([configFile(fileId: 'metersphere-maven', targetLocation: 'settings.xml')]) {
                     sh "./mvnw clean package --settings ./settings.xml"
-                    sh "mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar) && mkdir -p target/dependency/BOOT-INF/classes/jmeter/lib/junit"
+                    sh "mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)"
                 }
             }
         }
