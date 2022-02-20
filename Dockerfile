@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-alpine
+FROM metersphere/fabric8-java-alpine-openjdk8-jre
 
 LABEL maintainer="FIT2CLOUD <support@fit2cloud.com>"
 
