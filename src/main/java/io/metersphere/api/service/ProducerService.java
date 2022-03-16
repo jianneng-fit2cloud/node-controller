@@ -1,7 +1,7 @@
 package io.metersphere.api.service;
 
 import com.alibaba.fastjson.JSON;
-import io.metersphere.api.config.KafkaConfig;
+import io.metersphere.config.KafkaConfig;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.ResultDTO;
