@@ -10,15 +10,15 @@
     </parent>
     <groupId>io.metersphere</groupId>
     <artifactId>node-controller</artifactId>
-    <version>v1.19</version>
+    <version>1.20</version>
     <name>node-controller</name>
     <description>node-controller</description>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>11</java.version>
         <jmeter.version>5.4.3</jmeter.version>
         <nacos.version>1.1.3</nacos.version>
-        <dubbo.version>2.7.8</dubbo.version>
+        <dubbo.version>2.7.15</dubbo.version>
         <groovy.version>3.0.8</groovy.version>
         <metersphere-jmeter-functions.version>1.4</metersphere-jmeter-functions.version>
     </properties>
@@ -74,7 +74,18 @@
             <artifactId>ms-jmeter-core</artifactId>
             <version>1.1.4</version>
         </dependency>
-
+        <!--  手动引入，不然会有 java.lang.NoClassDefFoundError: Could not initialize class org.apache.dubbo.config.ReferenceConfig      -->
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+            <version>${dubbo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-context</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
