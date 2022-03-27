@@ -1,7 +1,6 @@
 package io.metersphere.api.jmeter;
 
 import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
-import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
@@ -23,6 +22,8 @@ public class JMeterService {
 
     @Resource
     private JmeterProperties jmeterProperties;
+    @Resource
+    private ExecThreadPoolExecutor execThreadPoolExecutor;
 
     @PostConstruct
     public void init() {
@@ -54,7 +55,7 @@ public class JMeterService {
                 FixedCapacityUtils.jmeterLogTask.put(runRequest.getReportId(), System.currentTimeMillis());
             }
             runRequest.setHashTree(testPlan);
-            JMeterBase.addSyncListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
+            JMeterBase.addBackendListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
             runner.run(runRequest.getReportId());
         } catch (Exception e) {
@@ -65,9 +66,9 @@ public class JMeterService {
 
     public void run(JmeterRunRequestDTO request) {
         if (request.getCorePoolSize() > 0) {
-            CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).setCorePoolSize(request.getCorePoolSize());
+            execThreadPoolExecutor.setCorePoolSize(request.getCorePoolSize());
         }
-        CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).addTask(request);
+        execThreadPoolExecutor.addTask(request);
     }
 
     public void addQueue(JmeterRunRequestDTO request) {

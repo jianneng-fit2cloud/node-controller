@@ -1,7 +1,7 @@
 package io.metersphere.api.service;
 
 import com.alibaba.fastjson.JSON;
-import io.metersphere.api.config.KafkaConfig;
+import io.metersphere.config.KafkaConfig;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.ResultDTO;
@@ -45,7 +45,6 @@ public class ProducerService {
         KafkaTemplate kafkaTemplate = this.init(producerProps);
         if (kafkaTemplate != null) {
             kafkaTemplate.send(KafkaConfig.TOPICS, message);
-            kafkaTemplate.flush();
         }
     }
 
@@ -68,13 +67,6 @@ public class ProducerService {
 
         if (dto != null && StringUtils.equals(dto.getReportType(), RunModeConstants.SET_REPORT.name())) {
             LoggerUtil.info("处理接口集合报告ID：" + dto.getReportId());
-            JmeterExecuteService jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
-            if (jmeterExecuteService != null) {
-                jmeterExecuteService.remove(dto.getReportId(), dto.getTestId());
-                LoggerUtil.info("正在执行中的并发报告数量：" + jmeterExecuteService.getRunningSize());
-                LoggerUtil.info("正在执行中的场景[" + dto.getReportId() + "]的数量：" + jmeterExecuteService.getRunningTasks(dto.getReportId()));
-                LoggerUtil.info("正在执行中的场景[" + dto.getReportId() + "]的内容：" + jmeterExecuteService.getRunningList(dto.getReportId()));
-            }
         }
     }
 }

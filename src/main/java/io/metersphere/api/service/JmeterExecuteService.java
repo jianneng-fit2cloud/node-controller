@@ -1,11 +1,11 @@
 package io.metersphere.api.service;
 
-import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.JMeterService;
+import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
+import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.api.service.utils.ZipSpider;
-import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -21,10 +21,6 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class JmeterExecuteService {
@@ -32,16 +28,11 @@ public class JmeterExecuteService {
     private JMeterService jMeterService;
 
     private static String url = null;
+    private static boolean enable = false;
     private static String plugUrl = null;
-
-    // 记录所以执行中的请求/场景
-    private Map<String, List<String>> runningTasks = new HashMap<>();
 
     public String runStart(JmeterRunRequestDTO runRequest) {
         try {
-            if (runRequest != null && StringUtils.equals(runRequest.getReportType(), RunModeConstants.SET_REPORT.name())) {
-                this.putRunningTasks(runRequest.getReportId(), runRequest.getTestId());
-            }
             if (runRequest.getKafkaConfig() == null) {
                 return "KAFKA 初始化失败，请检查配置";
             }
@@ -56,6 +47,7 @@ public class JmeterExecuteService {
                 if (file != null) {
                     ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                     this.loadJar(FileUtils.JAR_FILE_DIR);
+                    FileUtils.deleteFile(file.getPath());
                 }
             }
             if (StringUtils.isEmpty(plugUrl)) {
@@ -68,6 +60,7 @@ public class JmeterExecuteService {
             }
             url = jarUrl;
             plugUrl = plugJarUrl;
+            enable = runRequest.isEnable();
             LoggerUtil.info("开始拉取脚本和脚本附件：" + runRequest.getPlatformUrl());
 
             File bodyFile = ZipSpider.downloadFile(runRequest.getPlatformUrl(), FileUtils.BODY_FILE_DIR);
@@ -81,10 +74,13 @@ public class JmeterExecuteService {
                 jMeterService.run(runRequest);
                 FileUtils.deleteFile(bodyFile.getPath());
             } else {
+                PoolExecBlockingQueueUtil.offer(runRequest.getReportId());
                 MSException.throwException("未找到执行的JMX文件");
             }
         } catch (Exception e) {
             LoggerUtil.error(e.getMessage());
+            BlockingQueueUtil.remove(runRequest.getReportId());
+            PoolExecBlockingQueueUtil.offer(runRequest.getReportId());
             return e.getMessage();
         }
         return "SUCCESS";
@@ -143,42 +139,9 @@ public class JmeterExecuteService {
         }
     }
 
-    public void putRunningTasks(String key, String value) {
-        List<String> list = new ArrayList<>();
-        if (this.runningTasks.containsKey(key)) {
-            list = this.runningTasks.get(key);
-        }
-        list.add(value);
-        this.runningTasks.put(key, list);
-    }
-
-    public int getRunningTasks(String key) {
-        if (this.runningTasks.containsKey(key)) {
-            return this.runningTasks.get(key).size();
-        }
-        return 0;
-    }
-
-    public int getRunningSize() {
-        return this.runningTasks.size();
-    }
-
-    public String getRunningList(String key) {
-        if (this.runningTasks.containsKey(key)) {
-            return JSON.toJSONString(this.runningTasks.get(key));
-        }
-        return null;
-    }
-
-    public void remove(String key, String value) {
-        if (this.runningTasks.containsKey(key)) {
-            this.runningTasks.get(key).remove(value);
-        }
-    }
-
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
-        if (StringUtils.isNotEmpty(url)) {
+        if (StringUtils.isNotEmpty(url) && enable) {
             FileUtils.deletePath(FileUtils.JAR_FILE_DIR);
             File file = ZipSpider.downloadFile(url, FileUtils.JAR_FILE_DIR);
             if (file != null) {

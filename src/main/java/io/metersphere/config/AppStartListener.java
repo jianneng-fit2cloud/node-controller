@@ -1,4 +1,4 @@
-package io.metersphere.api.config;
+package io.metersphere.config;
 
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;

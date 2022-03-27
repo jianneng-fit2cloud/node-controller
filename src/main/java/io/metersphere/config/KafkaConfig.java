@@ -1,4 +1,4 @@
-package io.metersphere.api.config;
+package io.metersphere.config;
 
 public class KafkaConfig {
     //执行结果回传
