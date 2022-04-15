@@ -99,11 +99,13 @@ public class JmeterOperateService {
                     public void onNext(Frame item) {
                         String log = new String(item.getPayload()).trim();
                         String oomMessage = "There is insufficient memory for the Java Runtime Environment to continue.";
-                        if (StringUtils.contains(log, oomMessage)) {
+                        String oomMessage2 = "Exception: java.lang.OutOfMemoryError thrown from the UncaughtExceptionHandler in thread";
+                        if (StringUtils.contains(log, oomMessage) || StringUtils.contains(log, oomMessage2)) {
                             // oom 退出
                             String[] contents = new String[]{reportId, "none", "0", oomMessage};
                             String message = StringUtils.join(contents, " ");
                             kafkaProducerService.sendMessage(topic, message);
+                            stopContainer(testId);
                         }
                         LoggerUtil.info(log);
                     }

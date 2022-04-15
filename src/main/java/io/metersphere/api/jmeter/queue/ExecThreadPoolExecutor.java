@@ -1,5 +1,6 @@
 package io.metersphere.api.jmeter.queue;
 
+import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -86,26 +87,30 @@ public class ExecThreadPoolExecutor {
         buffer.append(" 核心线程数：" + threadPool.getCorePoolSize()).append("\n");
         buffer.append(" 活动线程数：" + threadPool.getActiveCount()).append("\n");
         buffer.append(" 最大线程数：" + threadPool.getMaximumPoolSize()).append("\n");
+        buffer.append(" 系统当前线程数：" + JmeterThreadUtils.activeCount()).append("\n");
         buffer.append(" 线程池活跃度：" + divide(threadPool.getActiveCount(), threadPool.getMaximumPoolSize())).append("\n");
         buffer.append(" 任务完成数：" + threadPool.getCompletedTaskCount()).append("\n");
         buffer.append(" 队列大小：" + (queue.size() + queue.remainingCapacity())).append("\n");
         buffer.append(" 当前排队线程数：" + (msRejectedExecutionHandler.getBufferQueue().size() + queue.size())).append("\n");
         buffer.append(" 队列剩余大小：" + queue.remainingCapacity()).append("\n");
-        buffer.append(" 阻塞队列大小：" + PoolExecBlockingQueueUtil.queue.size()).append("\n");
+        buffer.append(" 执行队列大小：" + PoolExecBlockingQueueUtil.queue.size()).append("\n");
         buffer.append(" 队列使用度：" + divide(queue.size(), queue.size() + queue.remainingCapacity()));
 
         LoggerUtil.info(buffer.toString());
-
         if (queue.size() > 0 && LoggerUtil.getLogger().isDebugEnabled()) {
             LoggerUtil.debug(this.getWorkerQueue());
         }
     }
 
-    public void setCorePoolSize(int corePoolSize) {
+    public void setCorePoolSize(int maximumPoolSize) {
         try {
-            if (corePoolSize != threadPool.getCorePoolSize()) {
+            if (maximumPoolSize != threadPool.getMaximumPoolSize()) {
+                int corePoolSize = maximumPoolSize > 500 ? 500 : maximumPoolSize;
+                if (corePoolSize > CORE_POOL_SIZE) {
+                    threadPool.setCorePoolSize(corePoolSize);
+                }
                 threadPool.setCorePoolSize(corePoolSize);
-                threadPool.setMaximumPoolSize(corePoolSize);
+                threadPool.setMaximumPoolSize(maximumPoolSize);
                 threadPool.allowCoreThreadTimeOut(true);
                 LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
             }

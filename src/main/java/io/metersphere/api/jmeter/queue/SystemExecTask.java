@@ -4,6 +4,7 @@ import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
 import io.metersphere.api.service.ProducerService;
+import io.metersphere.cache.JMeterEngineCache;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.utils.LoggerUtil;
@@ -26,8 +27,7 @@ public class SystemExecTask implements Runnable {
     @Override
     public void run() {
         LoggerUtil.info("开始执行报告ID：【 " + request.getReportId() + " 】,资源ID【 " + request.getTestId() + " 】");
-        JMeterService jMeterService = CommonBeanFactory.getBean(JMeterService.class);
-        jMeterService.addQueue(request);
+        CommonBeanFactory.getBean(JMeterService.class).addQueue(request);
         if (StringUtils.isNotEmpty(request.getReportId())) {
             Object res = PoolExecBlockingQueueUtil.take(request.getReportId());
             if (res == null && !JmeterThreadUtils.isRunning(request.getReportId(), request.getTestId())) {
@@ -42,6 +42,9 @@ public class SystemExecTask implements Runnable {
                 } else {
                     dto.getArbitraryData().put("TEST_END", true);
                     dto.getArbitraryData().put("TIMEOUT", true);
+                }
+                if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
+                    JMeterEngineCache.runningEngine.remove(dto.getReportId());
                 }
                 CommonBeanFactory.getBean(ProducerService.class).send(dto, request.getKafkaConfig());
             }

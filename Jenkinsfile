@@ -29,19 +29,12 @@ pipeline {
                 sh "docker buildx build --build-arg MS_VERSION=\${TAG_NAME:-\$BRANCH_NAME}-\${GIT_COMMIT:0:8} -t ${IMAGE_PREFIX}/${IMAGE_NAME}:\${TAG_NAME:-\$BRANCH_NAME} --platform linux/amd64,linux/arm64 . --push"
             }
         }
-        stage('Notification') {
-            steps {
-                withCredentials([string(credentialsId: 'wechat-bot-webhook', variable: 'WEBHOOK')]) {
-                    qyWechatNotification failSend: true, mentionedId: '', mentionedMobile: '', webhookUrl: '${WEBHOOK}'
-                }
-            }
-        }
     }
     post('Notification') {
         always {
             sh "echo \$WEBHOOK\n"
             withCredentials([string(credentialsId: 'wechat-bot-webhook', variable: 'WEBHOOK')]) {
-                qyWechatNotification failSend: true, mentionedId: '', mentionedMobile: '', webhookUrl: "$WEBHOOK"
+                qyWechatNotification failNotify: true, mentionedId: '', mentionedMobile: '', webhookUrl: "$WEBHOOK"
             }
             sh "./mvnw clean"
         }

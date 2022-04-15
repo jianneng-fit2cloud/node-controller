@@ -32,4 +32,14 @@ public class JvmInfo {
         this.vmUse = vmUse;
         this.totalThread = totalThread;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder("当前JVM内存信息：").append("\n");
+        builder.append("当前JVM最大内存：" + this.vmMax + " M").append("\n");
+        builder.append("当前JVM占用的总内存：" + this.vmTotal + " M").append("\n");
+        builder.append("当前JVM空闲内存为：" + this.vmFree + " M").append("\n");
+        builder.append("当前JVM已用内存为：" + this.vmUse + " M").append("\n");
+        return builder.toString();
+    }
 }

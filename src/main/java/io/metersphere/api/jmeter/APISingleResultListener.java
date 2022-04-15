@@ -5,7 +5,9 @@ import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
+import io.metersphere.api.service.JvmService;
 import io.metersphere.api.service.ProducerService;
+import io.metersphere.cache.JMeterEngineCache;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.jmeter.MsExecListener;
 import io.metersphere.utils.LoggerUtil;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class APISingleResultListener extends MsExecListener {
+
     private String getJmeterLogger(String testId) {
         try {
             Long startTime = FixedCapacityUtils.jmeterLogTask.get(testId);
@@ -45,6 +48,9 @@ public class APISingleResultListener extends MsExecListener {
 
     @Override
     public void testEnded(ResultDTO dto, Map<String, Object> kafkaConfig) {
+        if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
+            JMeterEngineCache.runningEngine.remove(dto.getReportId());
+        }
         PoolExecBlockingQueueUtil.offer(dto.getReportId());
         LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
         if (StringUtils.isNotEmpty(dto.getReportId())) {
@@ -61,5 +67,6 @@ public class APISingleResultListener extends MsExecListener {
         FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
         // 存储结果
         CommonBeanFactory.getBean(ProducerService.class).send(dto, kafkaConfig);
+        LoggerUtil.info(JvmService.jvmInfo().toString());
     }
 }

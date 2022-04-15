@@ -14,7 +14,7 @@ public class BlockingQueueUtil {
         if (StringUtils.isNotEmpty(key) && !queue.contains(key)) {
             try {
                 queue.add(key);
-                LoggerUtil.info("执行任务入列：" + key + " 剩余：" + queue.size());
+                LoggerUtil.info("执行任务入列：" + key + " 正在处理：" + queue.size());
                 return true;
             } catch (Exception e) {
                 LoggerUtil.error(e);

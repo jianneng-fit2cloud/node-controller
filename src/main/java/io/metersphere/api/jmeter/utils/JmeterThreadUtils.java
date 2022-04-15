@@ -28,4 +28,9 @@ public class JmeterThreadUtils {
         }
         return false;
     }
+
+    public static Integer activeCount() {
+        ThreadGroup currentGroup = Thread.currentThread().getThreadGroup();
+        return currentGroup.activeCount();
+    }
 }
