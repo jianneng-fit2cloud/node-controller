@@ -52,12 +52,12 @@ public class ProducerService {
         ProducerService producerServer = CommonBeanFactory.getBean(ProducerService.class);
         try {
             if (producerServer != null) {
-                LoggerUtil.info("执行完成开始同步发送KAFKA【" + dto.getTestId() + "】");
+                LoggerUtil.info("执行完成开始同步发送KAFKA【" + dto.getReportId() + "】");
                 producerServer.send(JSON.toJSONString(dto), kafkaConfig);
-                LoggerUtil.info("同步发送报告信息到KAFKA完成【" + dto.getTestId() + "】");
+                LoggerUtil.info("同步发送报告信息到KAFKA完成【" + dto.getReportId() + "】");
             }
         } catch (Exception ex) {
-            LoggerUtil.error("KAFKA 推送结果异常：[" + dto.getTestId() + "]" + ex.getMessage());
+            LoggerUtil.error("KAFKA 推送结果异常：[" + dto.getReportId() + "]" + ex.getMessage());
             // 补偿一个结果防止持续Running
             if (dto != null && dto.getRequestResults().size() > 0) {
                 dto.getRequestResults().clear();
