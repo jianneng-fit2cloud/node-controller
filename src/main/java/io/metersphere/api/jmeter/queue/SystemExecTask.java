@@ -26,7 +26,6 @@ public class SystemExecTask implements Runnable {
 
     @Override
     public void run() {
-        LoggerUtil.info("开始执行报告ID：【 " + request.getReportId() + " 】,资源ID【 " + request.getTestId() + " 】");
         CommonBeanFactory.getBean(JMeterService.class).addQueue(request);
         if (StringUtils.isNotEmpty(request.getReportId())) {
             Object res = PoolExecBlockingQueueUtil.take(request.getReportId());
@@ -46,6 +45,7 @@ public class SystemExecTask implements Runnable {
                 if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
                     JMeterEngineCache.runningEngine.remove(dto.getReportId());
                 }
+                BlockingQueueUtil.remove(request.getReportId());
                 CommonBeanFactory.getBean(ProducerService.class).send(dto, request.getKafkaConfig());
             }
         }
