@@ -87,7 +87,7 @@ public class ExecThreadPoolExecutor {
         buffer.append(" 核心线程数：" + threadPool.getCorePoolSize()).append("\n");
         buffer.append(" 活动线程数：" + threadPool.getActiveCount()).append("\n");
         buffer.append(" 最大线程数：" + threadPool.getMaximumPoolSize()).append("\n");
-        buffer.append(" 系统当前线程数：" + JmeterThreadUtils.activeCount()).append("\n");
+        buffer.append(" 当前线程数：" + JmeterThreadUtils.activeCount()).append("\n");
         buffer.append(" 线程池活跃度：" + divide(threadPool.getActiveCount(), threadPool.getMaximumPoolSize())).append("\n");
         buffer.append(" 任务完成数：" + threadPool.getCompletedTaskCount()).append("\n");
         buffer.append(" 队列大小：" + (queue.size() + queue.remainingCapacity())).append("\n");

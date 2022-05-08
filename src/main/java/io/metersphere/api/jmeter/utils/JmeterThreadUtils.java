@@ -4,6 +4,8 @@ import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
 import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.management.ManagementFactory;
+
 public class JmeterThreadUtils {
     public static boolean isRunning(String reportId, String testId) {
         if (StringUtils.isEmpty(reportId)) {
@@ -32,5 +34,9 @@ public class JmeterThreadUtils {
     public static Integer activeCount() {
         ThreadGroup currentGroup = Thread.currentThread().getThreadGroup();
         return currentGroup.activeCount();
+    }
+
+    public static Integer threadCount() {
+         return ManagementFactory.getThreadMXBean().getThreadCount();
     }
 }

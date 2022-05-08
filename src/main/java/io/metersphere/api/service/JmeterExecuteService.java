@@ -71,7 +71,7 @@ public class JmeterExecuteService {
                 HashTree testPlan = SaveService.loadTree(jmxFile);
                 // 开始执行
                 runRequest.setHashTree(testPlan);
-                jMeterService.run(runRequest);
+                jMeterService.runLocal(runRequest, testPlan);
                 FileUtils.deleteFile(bodyFile.getPath());
             } else {
                 PoolExecBlockingQueueUtil.offer(runRequest.getReportId());
