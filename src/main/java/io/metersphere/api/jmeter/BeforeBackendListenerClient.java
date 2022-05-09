@@ -113,11 +113,8 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
     }
 
     @Override
-    public void teardownTest(BackendListenerContext context) throws Exception {
+    public void teardownTest(BackendListenerContext context) {
         try {
-            if (FileServer.getFileServer() != null) {
-                FileServer.getFileServer().closeCsv(dto.getReportId());
-            }
             super.teardownTest(context);
             // 处理结果集
             this.format();

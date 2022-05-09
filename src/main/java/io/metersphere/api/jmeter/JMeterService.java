@@ -7,8 +7,6 @@ import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.constants.BackendListenerConstants;
 import io.metersphere.dto.JmeterRunRequestDTO;
-import io.metersphere.jmeter.APIBackendListenerClient;
-import io.metersphere.jmeter.JMeterBase;
 import io.metersphere.jmeter.LocalRunner;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.collections4.MapUtils;

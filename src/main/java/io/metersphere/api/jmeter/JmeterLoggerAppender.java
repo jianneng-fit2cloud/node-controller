@@ -10,18 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
-    public static Logger logger = LoggerFactory.getLogger(getLogClass());
-
-    private static String getLogClass() {
-        String str = "";
-        StackTraceElement[] stack = (new Throwable()).getStackTrace();
-        if (stack.length > 3) {
-            StackTraceElement ste = stack[3];
-            str = ste.getClassName();// 类名称
-        }
-
-        return str;
-    }
+    public static Logger logger = LoggerFactory.getLogger("JMETER");
 
     @Override
     public void append(ILoggingEvent event) {
@@ -49,7 +38,9 @@ public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEve
                         FixedCapacityUtils.fixedCapacityCache.put(event.getTimeStamp(), message);
                     }
                 }
-                logger.info("JMETER-LOG" + message.toString());
+                logger.info("JMETER-LOG " + message.toString());
+            } else {
+                logger.info("JMETER-DEBUG-LOG " + event.getFormattedMessage());
             }
         } catch (Exception e) {
             LoggerUtil.error(e);
