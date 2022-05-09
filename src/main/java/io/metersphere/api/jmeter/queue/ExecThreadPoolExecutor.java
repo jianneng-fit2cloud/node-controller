@@ -117,6 +117,7 @@ public class ExecThreadPoolExecutor {
 
     public void removeQueue(String reportId) {
         // 检查缓冲区
+
         Queue<JmeterRunRequestDTO> bufferQueue = msRejectedExecutionHandler.getBufferQueue();
         if (CollectionUtils.isNotEmpty(bufferQueue)) {
             bufferQueue.forEach(item -> {

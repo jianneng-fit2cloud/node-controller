@@ -14,7 +14,6 @@ import io.metersphere.constants.BackendListenerConstants;
 import io.metersphere.dto.RequestResult;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.jmeter.JMeterBase;
-import io.metersphere.utils.ClassLoaderUtil;
 import io.metersphere.utils.ListenerUtil;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +21,7 @@ import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.services.FileServer;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
+import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -37,6 +37,7 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
     // KAFKA 配置信息
     private Map<String, Object> producerProps;
     private ResultDTO dto;
+    private List<SampleResult> queues;
 
     @Override
     public void setupTest(BackendListenerContext context) throws Exception {
@@ -70,10 +71,18 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
     @Override
     public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
         LoggerUtil.info("实施接收到数据【" + sampleResults.size() + " 】, " + dto.getQueueId());
+        queues.addAll(sampleResults);
+    }
+
+    private void format() {
         try {
+            LoggerUtil.info("开始处理结果集报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
+            ResultDTO resultDTO = new ResultDTO();
+            BeanUtils.copyProperties(dto, resultDTO);
+
             List<RequestResult> requestResults = new LinkedList<>();
             List<String> environmentList = new ArrayList<>();
-            sampleResults.forEach(result -> {
+            queues.forEach(result -> {
                 ListenerUtil.setVars(result);
                 RequestResult requestResult = JMeterBase.getRequestResult(result);
                 if (StringUtils.equals(result.getSampleLabel(), ListenerUtil.RUNNING_DEBUG_SAMPLER_NAME)) {
@@ -90,12 +99,14 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
                     }
                 }
             });
-            dto.setRequestResults(requestResults);
-            ListenerUtil.setEev(dto, environmentList);
+            resultDTO.setRequestResults(requestResults);
+            ListenerUtil.setEev(resultDTO, environmentList);
+            resultDTO.setConsole(getJmeterLogger(resultDTO.getReportId()));
 
-            LoggerUtil.info("开始处理单条执行结果报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
-            dto.setConsole(getJmeterLogger(dto.getReportId()));
-            CommonBeanFactory.getBean(ProducerService.class).send(dto, producerProps);
+            LoggerUtil.info("完成处理结果集报告【" + resultDTO.getReportId() + " 】,资源【 " + resultDTO.getTestId() + " 】");
+
+            CommonBeanFactory.getBean(ProducerService.class).send(resultDTO, producerProps);
+            queues.clear();
         } catch (Exception e) {
             LoggerUtil.error("JMETER-调用存储方法失败：" + e.getMessage());
         }
@@ -108,6 +119,8 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
                 FileServer.getFileServer().closeCsv(dto.getReportId());
             }
             super.teardownTest(context);
+            // 处理结果集
+            this.format();
 
             if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
                 JMeterEngineCache.runningEngine.remove(dto.getReportId());
@@ -132,7 +145,7 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
             LoggerUtil.info(" 系统当线程总数==========>>>>>>：" + JmeterThreadUtils.threadCount());
             LoggerUtil.info(JvmService.jvmInfo().toString());
 
-            // 存储结果
+            // 发送整体执行完成标示
             CommonBeanFactory.getBean(ProducerService.class).send(dto, producerProps);
 
             LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
@@ -161,5 +174,6 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
         if (StringUtils.isNotEmpty(ept)) {
             dto.setExtendedParameters(JSON.parseObject(context.getParameter(BackendListenerConstants.EPT.name()), Map.class));
         }
+        queues = new LinkedList<>();
     }
 }
