@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.metersphere</groupId>
     <artifactId>node-controller</artifactId>
-    <version>1.19</version>
+    <version>v1.19</version>
     <name>node-controller</name>
     <description>node-controller</description>
 
