@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
     public static Logger logger = LoggerFactory.getLogger("JMETER");
+    public static boolean enable = false;
 
     @Override
     public void append(ILoggingEvent event) {
@@ -38,8 +39,11 @@ public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEve
                         FixedCapacityUtils.fixedCapacityCache.put(event.getTimeStamp(), message);
                     }
                 }
-                logger.info("JMETER-LOG " + message.toString());
-            } else {
+                if (!enable) {
+                    logger.info("JMETER-LOG " + message.toString());
+                }
+            }
+            if (enable) {
                 logger.info("JMETER-DEBUG-LOG " + event.getFormattedMessage());
             }
         } catch (Exception e) {
