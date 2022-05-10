@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class APISingleResultListener extends MsExecListener {
 
-    private String getJmeterLogger(String testId) {
+    public static String getJmeterLogger(String testId) {
         try {
             Long startTime = FixedCapacityUtils.jmeterLogTask.get(testId);
             if (startTime == null) {
@@ -36,6 +36,10 @@ public class APISingleResultListener extends MsExecListener {
             return logMessage;
         } catch (Exception e) {
             return "";
+        } finally {
+            if (FixedCapacityUtils.jmeterLogTask.containsKey(testId)) {
+                FixedCapacityUtils.jmeterLogTask.remove(testId);
+            }
         }
     }
 

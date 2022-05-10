@@ -5,7 +5,6 @@ import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.FileUtils;
-import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
 import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
 import io.metersphere.api.service.JvmService;
 import io.metersphere.api.service.ProducerService;
@@ -18,14 +17,12 @@ import io.metersphere.utils.ListenerUtil;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.services.FileServer;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * JMeter BackendListener扩展, jmx脚本中使用
@@ -48,30 +45,52 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
         super.setupTest(context);
     }
 
-    private String getJmeterLogger(String testId) {
-        try {
-            Long startTime = FixedCapacityUtils.jmeterLogTask.get(testId);
-            if (startTime == null) {
-                startTime = FixedCapacityUtils.jmeterLogTask.get("[" + testId + "]");
-            }
-            if (startTime == null) {
-                startTime = System.currentTimeMillis();
-            }
-            Long endTime = System.currentTimeMillis();
-            Long finalStartTime = startTime;
-            String logMessage = FixedCapacityUtils.fixedCapacityCache.entrySet().stream()
-                    .filter(map -> map.getKey() > finalStartTime && map.getKey() < endTime)
-                    .map(map -> map.getValue()).collect(Collectors.joining());
-            return logMessage;
-        } catch (Exception e) {
-            return "";
-        }
-    }
 
     @Override
     public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
         LoggerUtil.info("实施接收到数据【" + sampleResults.size() + " 】, " + dto.getQueueId());
         queues.addAll(sampleResults);
+    }
+
+
+    @Override
+    public void teardownTest(BackendListenerContext context) {
+        try {
+            super.teardownTest(context);
+
+            // 处理结果集
+            this.format();
+
+            if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
+                JMeterEngineCache.runningEngine.remove(dto.getReportId());
+            }
+            LoggerUtil.info("JMETER-测试报告【" + dto.getReportId() + "】资源【 " + dto.getTestId() + " 】执行结束");
+
+            PoolExecBlockingQueueUtil.offer(dto.getReportId());
+            if (StringUtils.isNotEmpty(dto.getReportId())) {
+                BlockingQueueUtil.remove(dto.getReportId());
+            }
+            dto.setConsole(APISingleResultListener.getJmeterLogger(dto.getReportId()));
+
+            if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
+                dto.setArbitraryData(new HashMap<String, Object>() {{
+                    this.put("TEST_END", true);
+                }});
+            } else {
+                dto.getArbitraryData().put("TEST_END", true);
+            }
+            FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
+
+            LoggerUtil.info(" 系统当线程总数==========>>>>>>：" + JmeterThreadUtils.threadCount());
+            LoggerUtil.info(JvmService.jvmInfo().toString());
+
+            // 发送整体执行完成标示
+            CommonBeanFactory.getBean(ProducerService.class).send(dto, producerProps);
+
+            LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
+        } catch (Exception e) {
+            LoggerUtil.error("JMETER-测试报告【" + dto.getReportId() + "】资源【 " + dto.getTestId() + " 】执行异常", e);
+        }
     }
 
     private void format() {
@@ -101,53 +120,12 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
             });
             resultDTO.setRequestResults(requestResults);
             ListenerUtil.setEev(resultDTO, environmentList);
-            resultDTO.setConsole(getJmeterLogger(resultDTO.getReportId()));
-
             LoggerUtil.info("完成处理结果集报告【" + resultDTO.getReportId() + " 】,资源【 " + resultDTO.getTestId() + " 】");
 
             CommonBeanFactory.getBean(ProducerService.class).send(resultDTO, producerProps);
             queues.clear();
         } catch (Exception e) {
             LoggerUtil.error("JMETER-调用存储方法失败：" + e.getMessage());
-        }
-    }
-
-    @Override
-    public void teardownTest(BackendListenerContext context) {
-        try {
-            super.teardownTest(context);
-            // 处理结果集
-            this.format();
-
-            if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
-                JMeterEngineCache.runningEngine.remove(dto.getReportId());
-            }
-            LoggerUtil.info("JMETER-测试报告【" + dto.getReportId() + "】资源【 " + dto.getTestId() + " 】执行结束");
-
-            PoolExecBlockingQueueUtil.offer(dto.getReportId());
-            if (StringUtils.isNotEmpty(dto.getReportId())) {
-                BlockingQueueUtil.remove(dto.getReportId());
-            }
-            dto.setConsole(getJmeterLogger(dto.getReportId()));
-
-            if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
-                dto.setArbitraryData(new HashMap<String, Object>() {{
-                    this.put("TEST_END", true);
-                }});
-            } else {
-                dto.getArbitraryData().put("TEST_END", true);
-            }
-            FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
-
-            LoggerUtil.info(" 系统当线程总数==========>>>>>>：" + JmeterThreadUtils.threadCount());
-            LoggerUtil.info(JvmService.jvmInfo().toString());
-
-            // 发送整体执行完成标示
-            CommonBeanFactory.getBean(ProducerService.class).send(dto, producerProps);
-
-            LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
-        } catch (Exception e) {
-            LoggerUtil.error("JMETER-测试报告【" + dto.getReportId() + "】资源【 " + dto.getTestId() + " 】执行异常", e);
         }
     }
 
