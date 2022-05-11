@@ -1,5 +1,6 @@
 package io.metersphere.api.controller;
 
+import io.metersphere.api.jmeter.JmeterLoggerAppender;
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
 import io.metersphere.api.module.JvmInfo;
@@ -51,4 +52,8 @@ public class JmeterExecuteController {
         new LocalRunner().stop(keys);
     }
 
+    @GetMapping("/log/debug/{enable}")
+    public boolean debug(@PathVariable boolean enable) {
+        return JmeterLoggerAppender.enable = enable;
+    }
 }

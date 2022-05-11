@@ -6,8 +6,13 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import io.metersphere.api.jmeter.utils.DateUtils;
 import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
 import io.metersphere.utils.LoggerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+    public static Logger logger = LoggerFactory.getLogger("JMETER");
+    public static boolean enable = false;
+
     @Override
     public void append(ILoggingEvent event) {
         try {
@@ -34,6 +39,12 @@ public class JmeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEve
                         FixedCapacityUtils.fixedCapacityCache.put(event.getTimeStamp(), message);
                     }
                 }
+                if (!enable) {
+                    logger.info("JMETER-LOG " + message.toString());
+                }
+            }
+            if (enable) {
+                logger.info("JMETER-DEBUG-LOG " + event.getFormattedMessage());
             }
         } catch (Exception e) {
             LoggerUtil.error(e);

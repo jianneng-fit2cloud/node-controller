@@ -72,7 +72,17 @@
         <dependency>
             <groupId>io.metersphere</groupId>
             <artifactId>ms-jmeter-core</artifactId>
-            <version>1.1.6</version>
+            <version>1.1.7</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>netty</artifactId>
+                    <groupId>io.netty</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>mail</artifactId>
+                    <groupId>javax.mail</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!--  手动引入，不然会有 java.lang.NoClassDefFoundError: Could not initialize class org.apache.dubbo.config.ReferenceConfig      -->
         <dependency>
