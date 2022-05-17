@@ -19,7 +19,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
-import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -96,8 +95,6 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
     private void format() {
         try {
             LoggerUtil.info("开始处理结果集报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
-            ResultDTO resultDTO = new ResultDTO();
-            BeanUtils.copyProperties(dto, resultDTO);
 
             List<RequestResult> requestResults = new LinkedList<>();
             List<String> environmentList = new ArrayList<>();
@@ -118,11 +115,9 @@ public class BeforeBackendListenerClient extends AbstractBackendListenerClient i
                     }
                 }
             });
-            resultDTO.setRequestResults(requestResults);
-            ListenerUtil.setEev(resultDTO, environmentList);
-            LoggerUtil.info("完成处理结果集报告【" + resultDTO.getReportId() + " 】,资源【 " + resultDTO.getTestId() + " 】");
-
-            CommonBeanFactory.getBean(ProducerService.class).send(resultDTO, producerProps);
+            dto.setRequestResults(requestResults);
+            ListenerUtil.setEev(dto, environmentList);
+            LoggerUtil.info("完成处理结果集报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
             queues.clear();
         } catch (Exception e) {
             LoggerUtil.error("JMETER-调用存储方法失败：" + e.getMessage());
