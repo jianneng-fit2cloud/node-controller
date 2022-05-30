@@ -51,8 +51,9 @@ public class JMeterService {
     public void runLocal(JmeterRunRequestDTO runRequest, HashTree testPlan) {
         try {
             init();
-            if (!FixedCapacityUtils.jmeterLogTask.containsKey(runRequest.getReportId())) {
-                FixedCapacityUtils.jmeterLogTask.put(runRequest.getReportId(), System.currentTimeMillis());
+            String reportId = runRequest.getReportId() + "_" + runRequest.getTestId();
+            if (!FixedCapacityUtils.jmeterLogTask.containsKey(reportId)) {
+                FixedCapacityUtils.jmeterLogTask.put(reportId, System.currentTimeMillis());
             }
             runRequest.setHashTree(testPlan);
             JMeterBase.addBackendListener(runRequest, runRequest.getHashTree(), MsApiBackendListener.class.getCanonicalName());

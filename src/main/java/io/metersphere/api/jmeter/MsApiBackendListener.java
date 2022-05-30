@@ -49,7 +49,7 @@ public class MsApiBackendListener implements MsExecListener {
         if (StringUtils.isNotEmpty(dto.getReportId())) {
             BlockingQueueUtil.remove(dto.getReportId());
         }
-        dto.setConsole(getJmeterLogger(dto.getReportId()));
+        dto.setConsole(getJmeterLogger(dto.getReportId(), dto.getTestId()));
         if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
             dto.setArbitraryData(new HashMap<String, Object>() {{
                 this.put("TEST_END", true);
@@ -63,11 +63,12 @@ public class MsApiBackendListener implements MsExecListener {
         LoggerUtil.info(JvmService.jvmInfo().toString());
     }
 
-    private String getJmeterLogger(String testId) {
+    private String getJmeterLogger(String reportId, String testId) {
+        String messageKey = reportId + "_" + testId;
         try {
-            Long startTime = FixedCapacityUtils.jmeterLogTask.get(testId);
+            Long startTime = FixedCapacityUtils.jmeterLogTask.get(messageKey);
             if (startTime == null) {
-                startTime = FixedCapacityUtils.jmeterLogTask.get("[" + testId + "]");
+                startTime = FixedCapacityUtils.jmeterLogTask.get("[" + messageKey + "]");
             }
             if (startTime == null) {
                 startTime = System.currentTimeMillis();
@@ -81,7 +82,9 @@ public class MsApiBackendListener implements MsExecListener {
         } catch (Exception e) {
             return "";
         } finally {
-            FixedCapacityUtils.jmeterLogTask.remove(testId);
+            if (FixedCapacityUtils.jmeterLogTask.containsKey(messageKey)) {
+                FixedCapacityUtils.jmeterLogTask.remove(messageKey);
+            }
         }
     }
 }
