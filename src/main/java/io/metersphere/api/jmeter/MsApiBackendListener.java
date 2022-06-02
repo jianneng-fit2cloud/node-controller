@@ -34,6 +34,7 @@ public class MsApiBackendListener implements MsExecListener {
     public void handleTeardownTest(List<SampleResult> results, ResultDTO dto, Map<String, Object> kafkaConfig) {
         LoggerUtil.info("开始处理单条执行结果报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
         if (CollectionUtils.isNotEmpty(results)) {
+            this.clearLoops(results);
             queues.addAll(results);
         }
     }
@@ -85,6 +86,15 @@ public class MsApiBackendListener implements MsExecListener {
             if (FixedCapacityUtils.jmeterLogTask.containsKey(messageKey)) {
                 FixedCapacityUtils.jmeterLogTask.remove(messageKey);
             }
+        }
+    }
+
+    private void clearLoops(List<SampleResult> results) {
+        if (CollectionUtils.isNotEmpty(results)) {
+            results = results.stream().filter(sampleResult ->
+                    StringUtils.isNotEmpty(sampleResult.getSampleLabel())
+                            && !sampleResult.getSampleLabel().startsWith("MS_CLEAR_LOOPS_VAR_"))
+                    .collect(Collectors.toList());
         }
     }
 }
