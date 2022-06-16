@@ -116,25 +116,22 @@ public class JmeterExecuteService {
 
         File[] jars = listJars(file);
         for (File jarFile : jars) {
-            // 从URLClassLoader类中获取类所在文件夹的方法，jar也可以认为是一个文件夹
-            Method method = null;
             try {
-                method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            } catch (NoSuchMethodException | SecurityException e1) {
-                e1.printStackTrace();
-            }
-            // 获取方法的访问权限以便写回
-            try {
-                method.setAccessible(true);
-                // 获取系统类加载器
-                URLClassLoader classLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-
-                URL url = jarFile.toURI().toURL();
-                //URLClassLoader classLoader = new URLClassLoader(new URL[]{url});
-
-                method.invoke(classLoader, url);
+                ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+                try {
+                    // 从URLClassLoader类中获取类所在文件夹的方法，jar也可以认为是一个文件夹
+                    Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                    method.setAccessible(true);
+                    // 获取系统类加载器
+                    method.invoke(classLoader, jarFile.toURI().toURL());
+                } catch (Exception e) {
+                    Method method = classLoader.getClass()
+                            .getDeclaredMethod("appendToClassPathForInstrumentation", String.class);
+                    method.setAccessible(true);
+                    method.invoke(classLoader, jarFile.getPath());
+                }
             } catch (Exception e) {
-                e.printStackTrace();
+                LoggerUtil.error(e);
             }
         }
     }

@@ -1,17 +1,21 @@
 package io.metersphere.api.service;
 
 import com.alibaba.fastjson.JSON;
-import io.metersphere.config.KafkaConfig;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
+import io.metersphere.config.KafkaConfig;
 import io.metersphere.constants.RunModeConstants;
+import io.metersphere.dto.RequestResult;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.utils.LoggerUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.BeanUtils;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -57,12 +61,20 @@ public class ProducerService {
                 LoggerUtil.info("同步发送报告信息到KAFKA完成【" + dto.getReportId() + "】");
             }
         } catch (Exception ex) {
-            LoggerUtil.error("KAFKA 推送结果异常：[" + dto.getReportId() + "]" + ex.getMessage());
-            // 补偿一个结果防止持续Running
-            if (dto != null && dto.getRequestResults().size() > 0) {
-                dto.getRequestResults().clear();
+            LoggerUtil.error("KAFKA 推送结果异常：[" + dto.getReportId() + "]", ex);
+            // 尝试逐条发送
+            if (dto != null && CollectionUtils.isNotEmpty(dto.getRequestResults())) {
+                dto.getRequestResults().forEach(item -> {
+                    if (item != null) {
+                        ResultDTO resultDTO = new ResultDTO();
+                        BeanUtils.copyProperties(dto, resultDTO);
+                        resultDTO.setRequestResults(new LinkedList<RequestResult>() {{
+                            this.add(item);
+                        }});
+                        producerServer.send(JSON.toJSONString(resultDTO), kafkaConfig);
+                    }
+                });
             }
-            producerServer.send(JSON.toJSONString(dto), kafkaConfig);
         }
 
         if (dto != null && StringUtils.equals(dto.getReportType(), RunModeConstants.SET_REPORT.name())) {
