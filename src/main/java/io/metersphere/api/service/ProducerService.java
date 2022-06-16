@@ -64,6 +64,12 @@ public class ProducerService {
             LoggerUtil.error("KAFKA 推送结果异常：[" + dto.getReportId() + "]", ex);
             // 尝试逐条发送
             if (dto != null && CollectionUtils.isNotEmpty(dto.getRequestResults())) {
+                StringBuffer logMsg = new StringBuffer(dto.getConsole())
+                        .append("\n")
+                        .append("KAFKA推送结果异常：[" + dto.getReportId() + "]")
+                        .append("\n")
+                        .append(ex.getMessage());
+                dto.setConsole(logMsg.toString());
                 dto.getRequestResults().forEach(item -> {
                     if (item != null) {
                         ResultDTO resultDTO = new ResultDTO();
