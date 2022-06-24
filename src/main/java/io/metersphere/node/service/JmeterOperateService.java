@@ -265,7 +265,7 @@ public class JmeterOperateService {
         return sb.toString();
     }
 
-    private static void modifyRunTest(TestRequest testRequest){
+    private void modifyRunTest(TestRequest testRequest){
         Map<String, String> env = testRequest.getEnv();
         //String topic = env.getOrDefault("LOG_TOPIC", "JMETER_LOGS");
         String runTestContent = getRunTestContent();
@@ -281,7 +281,7 @@ public class JmeterOperateService {
         map.put("GRANULARITY", env.get("GRANULARITY"));
         StrSubstitutor strSubstitutor = new StrSubstitutor(map);
         String modifyRunTestContent = strSubstitutor.replace(runTestContent);
-        LoggerUtil.info("modify:",modifyRunTestContent);
+        System.out.println("modify:"+modifyRunTestContent);
         try {
             createShell("/opt/run-test.sh",modifyRunTestContent);
             runShell("/opt/run-test.sh");
@@ -290,11 +290,10 @@ public class JmeterOperateService {
         }
     }
 
-    public static String getRunTestContent() {
-        String runTestPath = JmeterOperateService.class.getResource("/").getPath() + "jmeter/run-test.sh";
+    public String getRunTestContent() {
         try {
-            File file = new File(runTestPath);
-            InputStream inputStream = new FileInputStream(file);
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            InputStream inputStream = loader.getResourceAsStream("jmeter/run-test.sh");
             byte[] bytes = readInputStream(inputStream);
             inputStream.close();
             return new String(bytes);
@@ -304,7 +303,7 @@ public class JmeterOperateService {
         return null;
     }
 
-    public static  byte[] readInputStream(InputStream inputStream) throws IOException {
+    public byte[] readInputStream(InputStream inputStream) throws IOException {
         byte[] buffer = new byte[1024];
         int len = 0;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -315,7 +314,7 @@ public class JmeterOperateService {
         return bos.toByteArray();
     }
 
-    public static void createShell(String path, String... strs) throws Exception {
+    public void createShell(String path, String... strs) throws Exception {
         LoggerUtil.info("开始创建:",path);
         if (strs == null) {
             return;
@@ -339,7 +338,7 @@ public class JmeterOperateService {
         LoggerUtil.info("结束创建");
     }
 
-    public static void runShell(String directory) throws Exception {
+    public void runShell(String directory) throws Exception {
         LoggerUtil.info("开始执行:"+directory);
         ProcessBuilder processBuilder = new ProcessBuilder(directory);
         //Sets the source and destination for subprocess standard I/O to be the same as those of the current Java process.
