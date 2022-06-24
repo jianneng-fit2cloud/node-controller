@@ -276,7 +276,7 @@ public class JmeterOperateService {
         map.put("RATIO", env.get("RATIO"));
         map.put("REPORT_ID", env.get("REPORT_ID"));
         map.put("RESOURCE_INDEX", env.get("RESOURCE_INDEX"));
-        map.put("TESTS_DIR", env.get("TESTS_DIR"));
+        map.put("TESTS_DIR", "/test");
         map.put("BACKEND_LISTENER", env.get("BACKEND_LISTENER"));
         map.put("GRANULARITY", env.get("GRANULARITY"));
         StrSubstitutor strSubstitutor = new StrSubstitutor(map);
