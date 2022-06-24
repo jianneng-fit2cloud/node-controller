@@ -13,20 +13,15 @@ import io.metersphere.node.util.DockerClientService;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipOutputStream;
@@ -37,25 +32,26 @@ public class JmeterOperateService {
     private KafkaProducerService kafkaProducerService;
 
     public void startContainer(TestRequest testRequest) {
-        Map<String, String> env = testRequest.getEnv();
-        String testId = env.get("TEST_ID");
-        LoggerUtil.info("Receive start container request, test id: {}", testId);
-        String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
-        // 检查kafka连通性
-        checkKafka(bootstrapServers);
-        // 初始化kafka
-        kafkaProducerService.init(bootstrapServers);
-
-        DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
-
-        String containerImage = testRequest.getImage();
-
-        // 查找镜像
-        searchImage(dockerClient, testRequest.getImage());
-        // 检查容器是否存在
-        checkContainerExists(dockerClient, testId);
-        // 启动测试
-        startContainer(testRequest, dockerClient, testId, containerImage);
+//        Map<String, String> env = testRequest.getEnv();
+//        String testId = env.get("TEST_ID");
+//        LoggerUtil.info("Receive start container request, test id: {}", testId);
+//        String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
+//        // 检查kafka连通性
+//        checkKafka(bootstrapServers);
+//        // 初始化kafka
+//        kafkaProducerService.init(bootstrapServers);
+//
+//        DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
+//
+//        String containerImage = testRequest.getImage();
+//
+//        // 查找镜像
+//        searchImage(dockerClient, testRequest.getImage());
+//        // 检查容器是否存在
+//        checkContainerExists(dockerClient, testId);
+//        // 启动测试
+//        startContainer(testRequest, dockerClient, testId, containerImage);
+        modifyRunTest(testRequest);
     }
 
     private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage) {
@@ -267,5 +263,94 @@ public class JmeterOperateService {
             }
         }
         return sb.toString();
+    }
+
+    private static void modifyRunTest(TestRequest testRequest){
+        Map<String, String> env = testRequest.getEnv();
+        //String topic = env.getOrDefault("LOG_TOPIC", "JMETER_LOGS");
+        String runTestContent = getRunTestContent();
+        Map<String, String> map = new HashMap<>();
+        map.put("METERSPHERE_URL", env.get("METERSPHERE_URL"));
+        map.put("TEST_ID", env.get("TEST_ID"));
+        map.put("RESOURCE_ID", env.get("RESOURCE_ID"));
+        map.put("RATIO", env.get("RATIO"));
+        map.put("REPORT_ID", env.get("REPORT_ID"));
+        map.put("RESOURCE_INDEX", env.get("RESOURCE_INDEX"));
+        map.put("TESTS_DIR", env.get("TESTS_DIR"));
+        map.put("BACKEND_LISTENER", env.get("BACKEND_LISTENER"));
+        map.put("GRANULARITY", env.get("GRANULARITY"));
+        StrSubstitutor strSubstitutor = new StrSubstitutor(map);
+        String modifyRunTestContent = strSubstitutor.replace(runTestContent);
+        LoggerUtil.info("modify:",modifyRunTestContent);
+        try {
+            createShell("/opt/run-test.sh",modifyRunTestContent);
+            runShell("/opt/run-test.sh");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static String getRunTestContent() {
+        String runTestPath = JmeterOperateService.class.getResource("/").getPath() + "jmeter/run-test.sh";
+        try {
+            File file = new File(runTestPath);
+            InputStream inputStream = new FileInputStream(file);
+            byte[] bytes = readInputStream(inputStream);
+            inputStream.close();
+            return new String(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static  byte[] readInputStream(InputStream inputStream) throws IOException {
+        byte[] buffer = new byte[1024];
+        int len = 0;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        while((len = inputStream.read(buffer)) != -1) {
+            bos.write(buffer, 0, len);
+        }
+        bos.close();
+        return bos.toByteArray();
+    }
+
+    public static void createShell(String path, String... strs) throws Exception {
+        LoggerUtil.info("开始创建:",path);
+        if (strs == null) {
+            return;
+        }
+        File sh = new File(path);
+        if (sh.exists()) {
+            sh.delete();
+        }
+        sh.createNewFile();
+        sh.setExecutable(true);
+        FileWriter fw = new FileWriter(sh);
+        BufferedWriter bf = new BufferedWriter(fw);
+        for (int i = 0; i < strs.length; i++) {
+            bf.write(strs[i]);
+            if (i < strs.length - 1) {
+                bf.newLine();
+            }
+        }
+        bf.flush();
+        bf.close();
+        LoggerUtil.info("结束创建");
+    }
+
+    public static void runShell(String directory) throws Exception {
+        LoggerUtil.info("开始执行:"+directory);
+        ProcessBuilder processBuilder = new ProcessBuilder(directory);
+        //Sets the source and destination for subprocess standard I/O to be the same as those of the current Java process.
+        processBuilder.inheritIO();
+        Process process = processBuilder.start();
+        int exitValue = process.waitFor();
+        if (exitValue != 0) {
+            // check for errors
+            new BufferedInputStream(process.getErrorStream());
+            throw new RuntimeException("execution of script failed!");
+        }
+        LoggerUtil.info("结束执行");
     }
 }
